@@ -2,6 +2,8 @@ import { normalizeOrigin } from "./lib/rules.js";
 import { getSites, setSites, getRuleError } from "./lib/storage.js";
 
 const listEl = document.getElementById("site-list");
+const listHeadEl = document.getElementById("list-head");
+const countEl = document.getElementById("site-count");
 const emptyEl = document.getElementById("empty-state");
 const bannerEl = document.getElementById("banner");
 const formEl = document.getElementById("add-form");
@@ -31,6 +33,8 @@ function permissionPattern(origin) {
 function render() {
   listEl.replaceChildren();
   emptyEl.hidden = sites.length > 0;
+  listHeadEl.hidden = sites.length === 0;
+  countEl.textContent = sites.length === 1 ? "1 site" : `${sites.length} sites`;
 
   for (const site of sites) {
     const row = document.createElement("li");
@@ -51,35 +55,50 @@ function render() {
     status.className = "js-status status-muted";
     status.setAttribute("role", "status");
 
+    // A styled checkbox rather than a custom widget: the switch is pure CSS,
+    // so keyboard behaviour and the change event stay native.
     const toggleLabel = document.createElement("label");
+    toggleLabel.className = "switch";
     const toggle = document.createElement("input");
     toggle.type = "checkbox";
     toggle.className = "js-toggle";
     toggle.checked = site.enabled;
-    toggleLabel.append(toggle, document.createTextNode(" On"));
+    toggle.setAttribute("aria-label", `Send credentials to ${site.origin}`);
+    toggleLabel.append(toggle);
 
+    // Buttons keep text-only children on purpose. Click delegation reads
+    // event.target.classList, so an inner icon or span would become the
+    // target and every handler would miss.
     const testBtn = document.createElement("button");
     testBtn.type = "button";
-    testBtn.className = "js-test";
+    testBtn.className = "btn js-test";
     testBtn.textContent = "Test";
 
     const editBtn = document.createElement("button");
     editBtn.type = "button";
-    editBtn.className = "js-edit";
+    editBtn.className = "btn js-edit";
     editBtn.textContent = "Edit";
 
     const grantBtn = document.createElement("button");
     grantBtn.type = "button";
-    grantBtn.className = "js-grant";
+    grantBtn.className = "btn btn-accent js-grant";
     grantBtn.textContent = "Grant access";
     grantBtn.hidden = true;
 
     const deleteBtn = document.createElement("button");
     deleteBtn.type = "button";
-    deleteBtn.className = "js-delete";
+    deleteBtn.className = "btn btn-danger js-delete";
     deleteBtn.textContent = "Delete";
 
-    row.append(identity, status, toggleLabel, testBtn, editBtn, grantBtn, deleteBtn);
+    const controls = document.createElement("div");
+    controls.className = "row-controls";
+    controls.append(status, testBtn, editBtn, deleteBtn, grantBtn);
+
+    const main = document.createElement("div");
+    main.className = "row-main";
+    main.append(toggleLabel, identity, controls);
+
+    row.append(main);
     listEl.append(row);
   }
 
@@ -117,11 +136,14 @@ function openEditForm(row, site) {
   const form = document.createElement("form");
   form.className = "edit-form";
 
+  // A placeholder is not an accessible name, and it disappears once the field
+  // has a value — which these always do.
   const username = document.createElement("input");
   username.type = "text";
   username.className = "js-edit-username";
   username.value = site.username;
   username.placeholder = "Username";
+  username.setAttribute("aria-label", `Username for ${site.origin}`);
 
   const password = document.createElement("input");
   password.type = "password";
@@ -129,18 +151,19 @@ function openEditForm(row, site) {
   password.value = site.password;
   password.placeholder = "Password";
   password.autocomplete = "new-password";
+  password.setAttribute("aria-label", `Password for ${site.origin}`);
 
   const actions = document.createElement("div");
   actions.className = "edit-actions";
 
   const save = document.createElement("button");
   save.type = "submit";
-  save.className = "js-edit-save";
+  save.className = "btn btn-accent js-edit-save";
   save.textContent = "Save";
 
   const cancel = document.createElement("button");
   cancel.type = "button";
-  cancel.className = "js-edit-cancel";
+  cancel.className = "btn js-edit-cancel";
   cancel.textContent = "Cancel";
 
   actions.append(save, cancel);

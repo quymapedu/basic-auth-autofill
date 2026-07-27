@@ -7,16 +7,27 @@
   </head>
   <body>
     <main>
-      <h1>Basic Auth Autofill</h1>
-      <p class="lede">
-        Sites listed here receive an <code>Authorization: Basic</code> header on every
-        request, so the browser never shows its sign-in dialog.
-      </p>
+      <header class="masthead">
+        <h1>Basic Auth Autofill</h1>
+        <p class="lede">
+          Sites listed here receive an <code>Authorization: Basic</code> header on every
+          request, so the browser never shows its sign-in dialog.
+        </p>
+      </header>
 
       <p id="banner" class="banner" role="alert" hidden></p>
 
+      <div id="list-head" class="list-head" hidden>
+        <h2>Sites</h2>
+        <span id="site-count" class="count"></span>
+      </div>
+
       <ul id="site-list" class="site-list"></ul>
-      <p id="empty-state" class="empty" hidden>No sites configured yet.</p>
+      <p id="empty-state" class="empty" hidden>
+        <strong>No sites yet</strong>
+        Add one below. Chrome will ask for access to that host, then the site loads
+        without a sign-in dialog.
+      </p>
 
       <form id="add-form" class="add-form" autocomplete="off">
         <h2>Add a site</h2>
@@ -33,7 +44,9 @@
           <input id="password-input" type="password" autocomplete="new-password" />
         </label>
         <p id="form-error" class="error" role="alert" hidden></p>
-        <button id="submit-btn" type="submit" disabled>Add site</button>
+        <button id="submit-btn" class="btn-primary" type="submit" disabled>
+          Add site
+        </button>
       </form>
 
       <p class="footnote">

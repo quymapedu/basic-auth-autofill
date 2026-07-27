@@ -44,7 +44,8 @@ access to that one host — allow it. The site then loads with no sign-in dialog
 
 Each row has:
 
-- **On** — toggles the header off without deleting the credentials.
+- **Toggle** — turns the header off without deleting the credentials. A site that is
+  off shows its hostname dimmed.
 - **Test** — sends one request and reports `ok`, `401 rejected`, or `unreachable`. Save
   before testing; it reports on the saved credential.
 - **Edit** — change the username or password. The address is fixed; to change it, delete
