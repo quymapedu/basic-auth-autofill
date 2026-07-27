@@ -287,6 +287,38 @@ listEl.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.classList.contains("js-test")) {
+    const { row, site } = rowFor(target);
+    if (!site) return;
+
+    // Prefer unsaved values from an open edit form, so a password can be
+    // checked before committing it.
+    const editForm = row.querySelector(".edit-form");
+    const username = editForm
+      ? editForm.querySelector(".js-edit-username").value.trim()
+      : site.username;
+    const password = editForm
+      ? editForm.querySelector(".js-edit-password").value
+      : site.password;
+
+    target.disabled = true;
+    setStatus(row, "testing…");
+
+    chrome.runtime
+      .sendMessage({ type: "test-site", origin: site.origin, username, password })
+      .then((result) => {
+        if (result?.state === "ok") setStatus(row, "ok", "ok");
+        else if (result?.state === "rejected") setStatus(row, "401 rejected", "bad");
+        else if (result?.state === "unreachable") setStatus(row, "unreachable", "bad");
+        else setStatus(row, `HTTP ${result?.status ?? "?"}`, "bad");
+      })
+      .catch((error) => setStatus(row, error.message, "bad"))
+      .finally(() => {
+        target.disabled = false;
+      });
+    return;
+  }
+
   if (target.classList.contains("js-grant")) {
     const { row, site } = rowFor(target);
     if (!site) return;
