@@ -55,6 +55,10 @@ test("normalizeOrigin rejects a hostname with no dot that is not localhost", () 
   assert.throws(() => normalizeOrigin("notahost"), /not a valid address/);
 });
 
+test("normalizeOrigin lowercases the host", () => {
+  assert.equal(normalizeOrigin("DEV.MapEDU.com"), "https://dev.mapedu.com");
+});
+
 test("buildRules returns an empty array for no sites", () => {
   assert.deepEqual(buildRules([]), []);
 });
@@ -73,6 +77,24 @@ test("buildRules assigns sequential ids starting at 1", () => {
     site({ id: "b", origin: "https://b.example.com" }),
   ]);
   assert.deepEqual(rules.map((r) => r.id), [1, 2]);
+});
+
+test("buildRules keeps each rule's own origin and credentials, not the first site's", () => {
+  const siteA = site({ id: "a", origin: "https://a.example.com", username: "alice", password: "p1" });
+  const siteB = site({ id: "b", origin: "https://b.example.com", username: "bob", password: "p2" });
+  const [ruleA, ruleB] = buildRules([siteA, siteB]);
+
+  assert.equal(ruleA.condition.urlFilter, "|https://a.example.com/");
+  assert.equal(ruleB.condition.urlFilter, "|https://b.example.com/");
+
+  assert.equal(
+    ruleA.action.requestHeaders[0].value,
+    `Basic ${encodeCredentials("alice", "p1")}`,
+  );
+  assert.equal(
+    ruleB.action.requestHeaders[0].value,
+    `Basic ${encodeCredentials("bob", "p2")}`,
+  );
 });
 
 test("buildRules renumbers so filtered-out sites leave no gaps", () => {

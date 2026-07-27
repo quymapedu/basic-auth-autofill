@@ -49,6 +49,7 @@ function render() {
 
     const status = document.createElement("span");
     status.className = "js-status status-muted";
+    status.setAttribute("role", "status");
 
     const toggleLabel = document.createElement("label");
     const toggle = document.createElement("input");
@@ -222,12 +223,15 @@ formEl.addEventListener("submit", (event) => {
           enabled: true,
         },
       ];
-      await setSites(next);
-      sites = next;
+      await persist(next);
       formEl.reset();
       render();
     })
-    .catch((error) => showFormError(error.message));
+    .catch((error) =>
+      showFormError(
+        `Access to ${origin} was granted but the site was not saved (${error.message}); retry, or remove the permission from chrome://extensions.`,
+      ),
+    );
 });
 
 listEl.addEventListener("change", async (event) => {

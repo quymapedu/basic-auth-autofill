@@ -1010,8 +1010,14 @@ function findSite(id) {
   return sites.find((site) => site.id === id);
 }
 
-async function persist() {
-  await setSites(sites);
+/**
+ * Persist-then-assign: only update the in-memory mirror after the storage
+ * write succeeds, so a failed write can never leave `sites` out of sync
+ * with what's actually persisted.
+ */
+async function persist(next) {
+  await setSites(next);
+  sites = next;
 }
 
 function rowFor(target) {
@@ -1033,25 +1039,47 @@ Append to `browser-ext/options.js`, before the `chrome.storage.onChanged` listen
 ```js
 listEl.addEventListener("change", async (event) => {
   if (!event.target.classList.contains("js-toggle")) return;
-  const { site } = rowFor(event.target);
+  const { row, site } = rowFor(event.target);
   if (!site) return;
-  site.enabled = event.target.checked;
-  await persist();
+  const next = sites.map((candidate) =>
+    candidate.id === site.id ? { ...candidate, enabled: event.target.checked } : candidate,
+  );
+  try {
+    await persist(next);
+  } catch (error) {
+    // persist() only reassigns `sites` on success, so on failure `site`
+    // still holds the true pre-change value — restore the checkbox to it
+    // rather than negating, since something else could have changed it.
+    event.target.checked = site.enabled;
+    setStatus(row, `Failed to save: ${error.message}`, "bad");
+  }
 });
 
 listEl.addEventListener("click", (event) => {
   const target = event.target;
 
   if (target.classList.contains("js-delete")) {
-    const { site } = rowFor(target);
+    const { row, site } = rowFor(target);
     if (!site) return;
     // Revoking is fire-and-forget: the record is gone either way, and a
     // leftover permission would otherwise linger in chrome://extensions.
     chrome.permissions
       .remove({ origins: [permissionPattern(site.origin)] })
       .catch(() => {});
-    sites = sites.filter((candidate) => candidate.id !== site.id);
-    persist().then(render);
+    const next = sites.filter((candidate) => candidate.id !== site.id);
+    persist(next)
+      .then(render)
+      .catch((error) => {
+        // If we get here, the permission may already have been revoked
+        // above even though the record itself was NOT deleted (persist
+        // only reassigns `sites` on success). Make that explicit so the
+        // user knows to re-grant access rather than trusting the row.
+        setStatus(
+          row,
+          `Not deleted: ${error.message}. Access may need to be re-granted — click Grant.`,
+          "bad",
+        );
+      });
     return;
   }
 
@@ -1193,10 +1221,17 @@ listEl.addEventListener("submit", async (event) => {
     return;
   }
 
-  site.username = username;
-  site.password = event.target.querySelector(".js-edit-password").value;
-  await persist();
-  render();
+  const password = event.target.querySelector(".js-edit-password").value;
+  const next = sites.map((candidate) =>
+    candidate.id === site.id ? { ...candidate, username, password } : candidate,
+  );
+
+  try {
+    await persist(next);
+    render();
+  } catch (error) {
+    setStatus(row, `Failed to save: ${error.message}`, "bad");
+  }
 });
 ```
 
