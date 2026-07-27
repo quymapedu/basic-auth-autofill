@@ -1,93 +1,109 @@
 # Basic Auth Autofill
 
-A Chrome extension that attaches `Authorization: Basic` headers to sites you configure, so
-the browser stops showing its sign-in dialog. Add as many sites as you like, each with its
-own credentials.
+**Stop typing the same HTTP Basic password ten times a day.**
 
-Built for MapEDU's protected environments (`dev.mapedu.com`, `staging.mapedu.com`), but
-nothing in it is MapEDU-specific — it works against any host behind HTTP Basic auth.
+Some sites sit behind HTTP Basic auth — staging servers, internal dashboards, protected
+previews — and greet you with the browser's sign-in dialog. Chrome forgets those
+credentials on restart, in a new profile, and in every incognito window, so the dialog
+comes back. Password managers can't help: the dialog is browser chrome, not a web page,
+and they can't reach it.
 
-## Why this exists
+Basic Auth Autofill remembers the credentials for the sites you choose and signs you in
+before the dialog can appear. You just load the page.
 
-HTTP Basic is stateless: every request must carry the header. Chrome keeps credentials in
-memory only, keyed by origin and realm, and drops them on restart, in a new profile, and in
-incognito — so the dialog comes back constantly.
+---
 
-Chrome's password manager cannot fix this. It keys HTTP-auth entries by `origin + realm`
-(e.g. `https://dev.mapedu.com/Login`), while its "Add password" UI can only create a plain
-`https://dev.mapedu.com/` entry, which never matches. Third-party password managers cannot
-help either — the dialog is browser chrome, not page DOM, so they cannot reach it.
+## Features
 
-Manifest V3 removed blocking `webRequest`, so an extension can no longer *answer* the auth
-prompt. This one prevents it instead, pre-attaching the header via `declarativeNetRequest`
-so the 401 never happens.
+- **Unlimited sites, separate credentials.** Add as many hosts as you like, each with its
+  own username and password.
+- **No sign-in dialog, ever.** Credentials are attached ahead of the request, so the site
+  never returns a challenge in the first place.
+- **Test a credential in one click.** Confirms the saved username and password actually
+  work, and tells you plainly if they don't: `ok`, `401 rejected`, or `unreachable`.
+- **Turn a site off without losing it.** Flip the toggle to pause a host; flip it back when
+  you need it. Nothing to retype.
+- **Edit in place.** Passwords rotate. Update one without deleting and re-adding the site.
+- **Access one host at a time.** The extension asks for permission per site, as you add it.
+  It never requests access to all your browsing.
+- **Nothing to build, nothing to configure.** No accounts, no servers, no dependencies, no
+  telemetry.
+
+## How it works
+
+1. **Add a site.** Enter the address, username and password.
+2. **Allow access.** Chrome asks for permission to that one host. Click Allow.
+3. **Browse.** The site loads signed in. No dialog, no typing — now and after every restart.
+
+That's the whole product. Everything else on the page is management: toggle, test, edit,
+delete.
 
 ## Install
+
+Not yet on the Chrome Web Store — load it directly:
 
 ```bash
 git clone git@mapedu.com:quymapedu/basic-auth-autofill.git
 ```
 
-1. Open `chrome://extensions` and enable **Developer mode**.
-2. Click **Load unpacked** and select the cloned directory.
-3. Click the toolbar icon to open the manager.
+1. Open `chrome://extensions` and turn on **Developer mode**.
+2. Click **Load unpacked** and pick the cloned folder.
+3. Click the toolbar icon to open the site manager.
 
-No build step and no dependencies — the cloned directory loads directly.
+There's no build step — the folder you cloned is the extension.
 
-Chrome tracks unpacked extensions by filesystem path, so if you move or rename the
-directory later, remove and re-load it.
+> Chrome tracks unpacked extensions by folder path. If you move or rename the folder,
+> remove the extension and load it again.
 
-## Usage
+## Privacy
 
-Enter a site address, username and password, then click **Add site**. Chrome asks for
-access to that one host — allow it. The site then loads with no sign-in dialog.
+- **Your credentials never leave your browser.** They're stored in this Chrome profile and
+  sent only to the sites you added them for.
+- **No analytics, no telemetry, no network calls of our own.** The only requests the
+  extension makes are the ones you trigger with the **Test** button.
+- **Permissions are yours to grant and revoke.** Access is requested per site when you add
+  it, and revoked automatically when you delete it.
+- **No credentials are stored in this repository.**
 
-Each row has:
+### Read this before you add a password
 
-- **Toggle** — turns the header off without deleting the credentials. A site that is
-  off shows its hostname dimmed.
-- **Test** — sends one request and reports `ok`, `401 rejected`, or `unreachable`. Save
-  before testing; it reports on the saved credential.
-- **Edit** — change the username or password. The address is fixed; to change it, delete
-  the row and add a new one.
-- **Delete** — removes the record and revokes the host permission.
+Credentials are saved **unencrypted** in your Chrome profile — the same way Chrome itself
+handles them. Anyone who can read your profile folder can read them.
 
-Because the header is always attached, a rotated password gives a bare 401 page rather than
-a fresh login prompt. Use **Test** to confirm a credential, then **Edit** to update it.
+**Use this for shared non-production environment passwords.** Don't use it for anything
+that guards real data, real money, or anyone's personal information.
 
-## Security
+## Good to know
 
-Credentials are stored **unencrypted** in `chrome.storage.local`. Anyone with read access to
-your Chrome profile directory can recover them. This is fine for shared non-production
-environment passwords and is not fine for anything else.
+**Which sites can it handle?** Anything behind standard HTTP Basic auth, `http` or `https`.
+Built for protected staging environments (`dev.mapedu.com`, `staging.mapedu.com`), but
+there's nothing product-specific in it.
 
-The header is attached to every request matching a configured origin, subresources included.
-Origins are exact-matched, so `dev.mapedu.com` never leaks credentials to
-`assets.dev.mapedu.com`.
+**Does it leak credentials to other hosts?** No. Addresses are matched exactly, so
+`dev.example.com` never sends its header to `assets.dev.example.com`.
 
-Host access is requested per site at runtime, so installing the extension grants it nothing
-— it never asks for access to all sites.
+**A site started showing a blank "401 Unauthorized" page.** That means the saved password
+is out of date. Because the header is always sent, the site rejects it outright instead of
+prompting you. Hit **Test** to confirm, then **Edit** to fix it.
 
-No credentials exist anywhere in this repository.
+**Can I change a site's address?** Delete the row and add the new address. Usernames and
+passwords are editable; addresses are fixed, so a stale entry can't quietly point at the
+wrong host.
 
-## Development
+**Does it work in incognito?** Yes, once you allow the extension in incognito from
+`chrome://extensions`.
+
+**Requirements.** Chrome 92+ or any Chromium browser built on it (Edge, Brave, Arc,
+Vivaldi). Not available for Firefox or Safari.
+
+---
+
+## For contributors
 
 ```bash
-npm test                         # unit tests for lib/rules.js
-node --check options.js          # syntax check
-python3 scripts/make-icons.py    # regenerate placeholder icons
+npm test    # unit tests
 ```
 
-| Path | Responsibility |
-|---|---|
-| `manifest.json` | MV3 declaration; `optional_host_permissions` only |
-| `lib/rules.js` | pure: site records → declarativeNetRequest rules |
-| `lib/queue.js` | pure: serializes rule syncs so overlapping runs cannot collide |
-| `lib/storage.js` | typed accessors over `chrome.storage.local` |
-| `background.js` | rebuilds the rule set on change; handles the Test request |
-| `options.html/.js/.css` | the manager UI |
-| `test/rules.test.js` | unit tests, run by `node --test` |
-
-`lib/rules.js` is pure — it imports nothing and touches no `chrome.*` API, which is what
-lets Node test it directly. Everything else is browser-coupled and needs manual checking in
-Chrome after any change to `background.js` or `options.js`.
+Design notes live in `docs/`. `lib/` holds the pure logic and is covered by tests;
+`background.js` and `options.js` talk to Chrome APIs and need a manual pass in the browser
+after changes.
