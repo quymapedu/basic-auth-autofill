@@ -194,19 +194,27 @@ formEl.addEventListener("submit", (event) => {
 
 listEl.addEventListener("change", async (event) => {
   if (!event.target.classList.contains("js-toggle")) return;
-  const { site } = rowFor(event.target);
+  const { row, site } = rowFor(event.target);
   if (!site) return;
   const next = sites.map((candidate) =>
     candidate.id === site.id ? { ...candidate, enabled: event.target.checked } : candidate,
   );
-  await persist(next);
+  try {
+    await persist(next);
+  } catch (error) {
+    // persist() only reassigns `sites` on success, so on failure `site`
+    // still holds the true pre-change value — restore the checkbox to it
+    // rather than negating, since something else could have changed it.
+    event.target.checked = site.enabled;
+    setStatus(row, `Failed to save: ${error.message}`, "bad");
+  }
 });
 
 listEl.addEventListener("click", (event) => {
   const target = event.target;
 
   if (target.classList.contains("js-delete")) {
-    const { site } = rowFor(target);
+    const { row, site } = rowFor(target);
     if (!site) return;
     // Revoking is fire-and-forget: the record is gone either way, and a
     // leftover permission would otherwise linger in chrome://extensions.
@@ -214,7 +222,19 @@ listEl.addEventListener("click", (event) => {
       .remove({ origins: [permissionPattern(site.origin)] })
       .catch(() => {});
     const next = sites.filter((candidate) => candidate.id !== site.id);
-    persist(next).then(render);
+    persist(next)
+      .then(render)
+      .catch((error) => {
+        // If we get here, the permission may already have been revoked
+        // above even though the record itself was NOT deleted (persist
+        // only reassigns `sites` on success). Make that explicit so the
+        // user knows to re-grant access rather than trusting the row.
+        setStatus(
+          row,
+          `Not deleted: ${error.message}. Access may need to be re-granted — click Grant.`,
+          "bad",
+        );
+      });
     return;
   }
 
