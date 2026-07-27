@@ -110,6 +110,44 @@ function setStatus(row, text, tone = "muted") {
   status.className = `js-status status-${tone}`;
 }
 
+function openEditForm(row, site) {
+  if (row.querySelector(".edit-form")) return; // already open
+
+  const form = document.createElement("form");
+  form.className = "edit-form";
+
+  const username = document.createElement("input");
+  username.type = "text";
+  username.className = "js-edit-username";
+  username.value = site.username;
+  username.placeholder = "Username";
+
+  const password = document.createElement("input");
+  password.type = "password";
+  password.className = "js-edit-password";
+  password.value = site.password;
+  password.placeholder = "Password";
+  password.autocomplete = "new-password";
+
+  const actions = document.createElement("div");
+  actions.className = "edit-actions";
+
+  const save = document.createElement("button");
+  save.type = "submit";
+  save.className = "js-edit-save";
+  save.textContent = "Save";
+
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "js-edit-cancel";
+  cancel.textContent = "Cancel";
+
+  actions.append(save, cancel);
+  form.append(username, password, actions);
+  row.append(form);
+  username.focus();
+}
+
 /**
  * A permission can be revoked from chrome://extensions at any time, which
  * would otherwise leave a row looking active while no rule is installed.
@@ -238,6 +276,17 @@ listEl.addEventListener("click", (event) => {
     return;
   }
 
+  if (target.classList.contains("js-edit")) {
+    const { row, site } = rowFor(target);
+    if (site) openEditForm(row, site);
+    return;
+  }
+
+  if (target.classList.contains("js-edit-cancel")) {
+    target.closest(".edit-form")?.remove();
+    return;
+  }
+
   if (target.classList.contains("js-grant")) {
     const { row, site } = rowFor(target);
     if (!site) return;
@@ -253,6 +302,32 @@ listEl.addEventListener("click", (event) => {
         }
       })
       .catch((error) => setStatus(row, error.message, "bad"));
+  }
+});
+
+listEl.addEventListener("submit", async (event) => {
+  if (!event.target.classList.contains("edit-form")) return;
+  event.preventDefault();
+
+  const { row, site } = rowFor(event.target);
+  if (!site) return;
+
+  const username = event.target.querySelector(".js-edit-username").value.trim();
+  if (!username) {
+    setStatus(row, "username required", "bad");
+    return;
+  }
+
+  const password = event.target.querySelector(".js-edit-password").value;
+  const next = sites.map((candidate) =>
+    candidate.id === site.id ? { ...candidate, username, password } : candidate,
+  );
+
+  try {
+    await persist(next);
+    render();
+  } catch (error) {
+    setStatus(row, `Failed to save: ${error.message}`, "bad");
   }
 });
 
