@@ -85,6 +85,31 @@ function render() {
   refreshPermissionStates();
 }
 
+function findSite(id) {
+  return sites.find((site) => site.id === id);
+}
+
+/**
+ * Persist-then-assign: only update the in-memory mirror after the storage
+ * write succeeds, so a failed write can never leave `sites` out of sync
+ * with what's actually persisted.
+ */
+async function persist(next) {
+  await setSites(next);
+  sites = next;
+}
+
+function rowFor(target) {
+  const row = target.closest(".site-row");
+  return row ? { row, site: findSite(row.dataset.id) } : { row: null, site: undefined };
+}
+
+function setStatus(row, text, tone = "muted") {
+  const status = row.querySelector(".js-status");
+  status.textContent = text;
+  status.className = `js-status status-${tone}`;
+}
+
 /**
  * A permission can be revoked from chrome://extensions at any time, which
  * would otherwise leave a row looking active while no rule is installed.
@@ -165,6 +190,50 @@ formEl.addEventListener("submit", (event) => {
       render();
     })
     .catch((error) => showFormError(error.message));
+});
+
+listEl.addEventListener("change", async (event) => {
+  if (!event.target.classList.contains("js-toggle")) return;
+  const { site } = rowFor(event.target);
+  if (!site) return;
+  const next = sites.map((candidate) =>
+    candidate.id === site.id ? { ...candidate, enabled: event.target.checked } : candidate,
+  );
+  await persist(next);
+});
+
+listEl.addEventListener("click", (event) => {
+  const target = event.target;
+
+  if (target.classList.contains("js-delete")) {
+    const { site } = rowFor(target);
+    if (!site) return;
+    // Revoking is fire-and-forget: the record is gone either way, and a
+    // leftover permission would otherwise linger in chrome://extensions.
+    chrome.permissions
+      .remove({ origins: [permissionPattern(site.origin)] })
+      .catch(() => {});
+    const next = sites.filter((candidate) => candidate.id !== site.id);
+    persist(next).then(render);
+    return;
+  }
+
+  if (target.classList.contains("js-grant")) {
+    const { row, site } = rowFor(target);
+    if (!site) return;
+    // Called directly in the click handler to preserve the user gesture.
+    chrome.permissions
+      .request({ origins: [permissionPattern(site.origin)] })
+      .then((granted) => {
+        if (granted) {
+          target.hidden = true;
+          setStatus(row, "");
+        } else {
+          setStatus(row, "access denied", "bad");
+        }
+      })
+      .catch((error) => setStatus(row, error.message, "bad"));
+  }
 });
 
 chrome.storage.onChanged.addListener((changes, area) => {
