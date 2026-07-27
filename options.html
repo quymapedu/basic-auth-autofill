@@ -3,8 +3,44 @@
   <head>
     <meta charset="utf-8" />
     <title>Basic Auth Autofill</title>
+    <link rel="stylesheet" href="options.css" />
   </head>
   <body>
-    <h1>Basic Auth Autofill</h1>
+    <main>
+      <h1>Basic Auth Autofill</h1>
+      <p class="lede">
+        Sites listed here receive an <code>Authorization: Basic</code> header on every
+        request, so the browser never shows its sign-in dialog.
+      </p>
+
+      <p id="banner" class="banner" hidden></p>
+
+      <ul id="site-list" class="site-list"></ul>
+      <p id="empty-state" class="empty" hidden>No sites configured yet.</p>
+
+      <form id="add-form" class="add-form" autocomplete="off">
+        <h2>Add a site</h2>
+        <label>
+          Address
+          <input id="origin-input" type="text" placeholder="dev.mapedu.com" />
+        </label>
+        <label>
+          Username
+          <input id="username-input" type="text" />
+        </label>
+        <label>
+          Password
+          <input id="password-input" type="password" autocomplete="new-password" />
+        </label>
+        <p id="form-error" class="error" hidden></p>
+        <button type="submit">Add site</button>
+      </form>
+
+      <p class="footnote">
+        Credentials are stored unencrypted in this browser profile. Use this for shared
+        non-production environment passwords only.
+      </p>
+    </main>
+    <script type="module" src="options.js"></script>
   </body>
 </html>

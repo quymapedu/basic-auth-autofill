@@ -1,0 +1,146 @@
+:root {
+  color-scheme: light dark;
+  --border: color-mix(in srgb, currentColor 18%, transparent);
+  --muted: color-mix(in srgb, currentColor 60%, transparent);
+}
+
+body {
+  margin: 0;
+  padding: 2.5rem 1.5rem;
+  font: 15px/1.5 system-ui, -apple-system, sans-serif;
+}
+
+main {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.4rem;
+}
+
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.lede,
+.footnote {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.footnote {
+  margin-top: 2rem;
+}
+
+.site-list {
+  list-style: none;
+  margin: 1.5rem 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.site-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.site-identity {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.site-origin {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.site-username {
+  display: block;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.js-status {
+  font-size: 0.8125rem;
+  min-width: 6.5rem;
+}
+
+.status-ok { color: #1a7f37; }
+.status-bad { color: #b3261e; }
+.status-muted { color: var(--muted); }
+
+button {
+  font: inherit;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover { border-color: currentColor; }
+
+.add-form {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 0.75rem;
+  max-width: 26rem;
+}
+
+.add-form label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.add-form input {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+.add-form button { justify-self: start; }
+
+.error { color: #b3261e; font-size: 0.875rem; margin: 0; }
+
+.banner {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: #b3261e;
+  color: #fff;
+  font-size: 0.875rem;
+}
+
+.empty { color: var(--muted); font-style: italic; }
+
+.edit-form {
+  flex: 1 1 100%;
+  display: grid;
+  gap: 0.5rem;
+  max-width: 26rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.edit-form input {
+  font: inherit;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+.edit-actions { display: flex; gap: 0.5rem; }
