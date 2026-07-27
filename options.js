@@ -5,6 +5,7 @@ const listEl = document.getElementById("site-list");
 const emptyEl = document.getElementById("empty-state");
 const bannerEl = document.getElementById("banner");
 const formEl = document.getElementById("add-form");
+const submitBtn = document.getElementById("submit-btn");
 const originInput = document.getElementById("origin-input");
 const usernameInput = document.getElementById("username-input");
 const passwordInput = document.getElementById("password-input");
@@ -148,7 +149,7 @@ formEl.addEventListener("submit", (event) => {
         showFormError(`Chrome denied access to ${origin}. Nothing was saved.`);
         return;
       }
-      sites = [
+      const next = [
         ...sites,
         {
           id: crypto.randomUUID(),
@@ -158,7 +159,8 @@ formEl.addEventListener("submit", (event) => {
           enabled: true,
         },
       ];
-      await setSites(sites);
+      await setSites(next);
+      sites = next;
       formEl.reset();
       render();
     })
@@ -174,6 +176,9 @@ async function init() {
   sites = await getSites();
   render();
   await showRuleErrorBanner();
+  // Only now does `sites` reflect storage; submitting before this point
+  // could silently clobber whatever was persisted in an earlier session.
+  submitBtn.disabled = false;
 }
 
 init();

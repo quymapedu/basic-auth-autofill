@@ -13,7 +13,7 @@
         request, so the browser never shows its sign-in dialog.
       </p>
 
-      <p id="banner" class="banner" hidden></p>
+      <p id="banner" class="banner" role="alert" hidden></p>
 
       <ul id="site-list" class="site-list"></ul>
       <p id="empty-state" class="empty" hidden>No sites configured yet.</p>
@@ -32,8 +32,8 @@
           Password
           <input id="password-input" type="password" autocomplete="new-password" />
         </label>
-        <p id="form-error" class="error" hidden></p>
-        <button type="submit">Add site</button>
+        <p id="form-error" class="error" role="alert" hidden></p>
+        <button id="submit-btn" type="submit" disabled>Add site</button>
       </form>
 
       <p class="footnote">
