@@ -18,9 +18,9 @@ Chrome's password manager cannot fix this. It keys HTTP-auth entries by `origin 
 `https://dev.mapedu.com/` entry, which never matches. Third-party password managers cannot
 help either — the dialog is browser chrome, not page DOM, so they cannot reach it.
 
-Manifest V3 removed blocking `webRequest`, which means an extension can no longer *answer*
-the auth prompt. This one prevents it instead, pre-attaching the header via
-`declarativeNetRequest` so the 401 never happens.
+Manifest V3 removed blocking `webRequest`, so an extension can no longer *answer* the auth
+prompt. This one prevents it instead, pre-attaching the header via `declarativeNetRequest`
+so the 401 never happens.
 
 ## Install
 
@@ -32,7 +32,7 @@ git clone git@mapedu.com:quymapedu/basic-auth-autofill.git
 2. Click **Load unpacked** and select the cloned directory.
 3. Click the toolbar icon to open the manager.
 
-There is no build step and there are no dependencies — the cloned directory loads directly.
+No build step and no dependencies — the cloned directory loads directly.
 
 Chrome tracks unpacked extensions by filesystem path, so if you move or rename the
 directory later, remove and re-load it.
@@ -45,18 +45,14 @@ access to that one host — allow it. The site then loads with no sign-in dialog
 Each row has:
 
 - **On** — toggles the header off without deleting the credentials.
-- **Test** — sends one request and reports `ok`, `401 rejected`, or `unreachable`.
+- **Test** — sends one request and reports `ok`, `401 rejected`, or `unreachable`. Save
+  before testing; it reports on the saved credential.
 - **Edit** — change the username or password. The address is fixed; to change it, delete
   the row and add a new one.
 - **Delete** — removes the record and revokes the host permission.
 
 Because the header is always attached, a rotated password gives a bare 401 page rather than
 a fresh login prompt. Use **Test** to confirm a credential, then **Edit** to update it.
-
-> **Unverified:** Test is intended to check unsaved values typed into an open edit form, so
-> a password can be confirmed before saving. Chrome's `declarativeNetRequest` rules may
-> override the header on the extension's own request, which would make it report on the
-> *saved* credential instead. Until that is confirmed in a browser, save before testing.
 
 ## Security
 
@@ -76,9 +72,9 @@ No credentials exist anywhere in this repository.
 ## Development
 
 ```bash
-npm test                         # unit tests for lib/rules.js, no dependencies
-python3 scripts/make-icons.py    # regenerate placeholder icons
+npm test                         # unit tests for lib/rules.js
 node --check options.js          # syntax check
+python3 scripts/make-icons.py    # regenerate placeholder icons
 ```
 
 | Path | Responsibility |
@@ -91,29 +87,5 @@ node --check options.js          # syntax check
 | `test/rules.test.js` | unit tests, run by `node --test` |
 
 `lib/rules.js` is pure — it imports nothing and touches no `chrome.*` API, which is what
-lets Node test it directly. Everything browser-coupled is verified by the checklist below
-rather than by automated tests.
-
-Design notes and the implementation plan:
-
-- [`docs/2026-07-27-basic-auth-extension-design.md`](docs/2026-07-27-basic-auth-extension-design.md)
-- [`docs/plans/2026-07-27-basic-auth-extension.md`](docs/plans/2026-07-27-basic-auth-extension.md)
-
-## Manual test checklist
-
-Run this after any change to `background.js` or `options.js`. Substitute your own host for
-`https://dev.mapedu.com`.
-
-- [ ] Load unpacked; install shows **no** "read and change all your data on all websites"
-      warning.
-- [ ] Add `https://dev.mapedu.com`; Chrome prompts for that host only.
-- [ ] Load the site; no auth dialog appears.
-- [ ] Change the password to a wrong value; **Test** reports `401 rejected`.
-- [ ] Restore the password; **Test** reports `ok`.
-- [ ] Toggle the site off; the auth dialog returns.
-- [ ] Toggle it back on; the dialog is gone.
-- [ ] Revoke site access from `chrome://extensions`; the row shows `no access` and a
-      **Grant access** button.
-- [ ] Delete the site; the host disappears from **Site access**.
-- [ ] Restart Chrome; remaining sites still work with no prompt.
-- [ ] Add a second site with different credentials; both work independently.
+lets Node test it directly. Everything else is browser-coupled and needs manual checking in
+Chrome after any change to `background.js` or `options.js`.
