@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Basic Auth Autofill">
+  <mask id="bolt-knockout">
+    <rect width="128" height="128" fill="black"/>
+    <rect x="28" y="58" width="72" height="56" rx="13" fill="white"/>
+    <path d="M 44 70 L 44 40 A 20 20 0 0 1 84 40" fill="none" stroke="white" stroke-width="12" stroke-linecap="round"/>
+    <path d="M 65.9 68 L 54.5 88.88 L 61.34 88.88 L 59.82 104 L 71.98 82.4 L 65.14 82.4 Z" fill="black"/>
+  </mask>
+  <rect width="128" height="128" fill="rgb(64,129,210)" mask="url(#bolt-knockout)"/>
+</svg>
