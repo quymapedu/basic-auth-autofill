@@ -81,6 +81,7 @@ python3 scripts/make-icons.py    # regenerate placeholder icons
 |---|---|
 | `manifest.json` | MV3 declaration; `optional_host_permissions` only |
 | `lib/rules.js` | pure: site records → declarativeNetRequest rules |
+| `lib/queue.js` | pure: serializes rule syncs so overlapping runs cannot collide |
 | `lib/storage.js` | typed accessors over `chrome.storage.local` |
 | `background.js` | rebuilds the rule set on change; handles the Test request |
 | `options.html/.js/.css` | the manager UI |

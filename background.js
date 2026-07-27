@@ -1,4 +1,5 @@
 import { buildRules, encodeCredentials } from "./lib/rules.js";
+import { createSerialQueue } from "./lib/queue.js";
 import { getSites, setRuleError, SITES_KEY } from "./lib/storage.js";
 
 /** Drops sites whose host permission is not currently granted. */
@@ -22,23 +23,33 @@ async function syncRules() {
   const sites = await getSites();
   const rules = buildRules(await withGrantedPermission(sites));
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: existing.map((rule) => rule.id),
-    addRules: rules,
-  });
+  // Remove the ids we are about to add as well as the ones already installed.
+  // Removals are applied before additions, and unknown ids are ignored, so this
+  // update is self-consistent even if `existing` were read stale.
+  const removeRuleIds = [
+    ...new Set([...existing.map((rule) => rule.id), ...rules.map((rule) => rule.id)]),
+  ];
+  await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds, addRules: rules });
 }
+
+// Adding a site fires permissions.onAdded and storage.onChanged almost
+// simultaneously. syncRules is a read-modify-write, so overlapping runs used to
+// read the same rule set and then collide adding the same id.
+const enqueueSync = createSerialQueue();
 
 /**
  * A silent sync failure is indistinguishable from success until a 401 shows
  * up, so the message is persisted for the options page to surface.
  */
-async function syncRulesSafe() {
-  try {
-    await syncRules();
-    await setRuleError(null);
-  } catch (error) {
-    await setRuleError(String(error?.message ?? error));
-  }
+function syncRulesSafe() {
+  return enqueueSync(async () => {
+    try {
+      await syncRules();
+      await setRuleError(null);
+    } catch (error) {
+      await setRuleError(String(error?.message ?? error));
+    }
+  });
 }
 
 async function testSite(origin, username, password) {
